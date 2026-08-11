@@ -1,0 +1,4076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QuizBloom — Interactive Quiz App</title>
+<meta name="description" content="QuizBloom is a beautiful, interactive quiz application with 300+ questions across Science, History, Geography, Math, Literature, and Pop Culture." />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --lavender:    #c4b5f4;
+    --lavender-lt: #ede9fc;
+    --lavender-dk: #7c5cbf;
+    --sky:         #b8d9f8;
+    --sky-lt:      #e8f4fe;
+    --sky-dk:      #3a7fd4;
+    --butter:      #fde68a;
+    --butter-lt:   #fffbea;
+    --butter-dk:   #b88a00;
+    --mint:        #bbf7d0;
+    --mint-lt:     #edfdf5;
+    --coral:       #fecaca;
+    --coral-lt:    #fff0f0;
+    --coral-dk:    #b91c1c;
+    --white:       #ffffff;
+    --ink:         #1e1b2e;
+    --ink-mid:     #4a4563;
+    --ink-muted:   #9490a8;
+    --border:      rgba(30,27,46,0.10);
+    --radius:      16px;
+    --radius-sm:   10px;
+    --shadow:      0 4px 24px rgba(196,181,244,0.18);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: linear-gradient(135deg, #ede9fc 0%, #e8f4fe 50%, #fffbea 100%);
+    min-height: 100vh;
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1rem; }
+  .card {
+    background: var(--white);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 520px;
+  }
+  .logo { font-family: 'DM Serif Display', serif; font-size: 2rem; color: var(--lavender-dk); letter-spacing: -0.5px; margin-bottom: 0.25rem; }
+  .logo span { color: var(--butter-dk); }
+  .tagline { font-size: 14px; color: var(--ink-muted); margin-bottom: 2rem; }
+  h2 { font-family: 'DM Serif Display', serif; font-size: 1.6rem; font-weight: 400; margin-bottom: 0.5rem; }
+  h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--ink-mid); }
+  p  { color: var(--ink-mid); margin-bottom: 1rem; }
+  .field { margin-bottom: 1.1rem; }
+  label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 5px; color: var(--ink-mid); }
+  input[type=text], input[type=email], input[type=password], select, textarea {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit; font-size: 15px; color: var(--ink);
+    background: var(--lavender-lt);
+    transition: border-color .2s, box-shadow .2s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--lavender);
+    box-shadow: 0 0 0 3px rgba(196,181,244,0.3);
+    background: var(--white);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 22px; border-radius: 99px;
+    font-family: inherit; font-size: 15px; font-weight: 600;
+    cursor: pointer; border: none; transition: transform .15s, box-shadow .15s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--lavender-dk); color: var(--white); box-shadow: 0 4px 14px rgba(124,92,191,0.3); }
+  .btn-primary:hover { box-shadow: 0 6px 20px rgba(124,92,191,0.4); transform: translateY(-1px); }
+  .btn-secondary { background: var(--butter); color: var(--butter-dk); box-shadow: 0 4px 14px rgba(253,230,138,0.5); }
+  .btn-secondary:hover { box-shadow: 0 6px 20px rgba(253,230,138,0.6); transform: translateY(-1px); }
+  .btn-ghost { background: transparent; color: var(--lavender-dk); border: 1.5px solid var(--lavender); }
+  .btn-ghost:hover { background: var(--lavender-lt); }
+  .btn-full { width: 100%; }
+  .btn-sm { padding: 7px 16px; font-size: 13px; }
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.9rem 2rem;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar .logo { font-size: 1.3rem; margin: 0; }
+  .topbar-nav { display: flex; gap: 10px; align-items: center; }
+  .progress-wrap { margin-bottom: 1.5rem; }
+  .progress-meta { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-muted); margin-bottom: 6px; }
+  .progress-track { height: 8px; background: var(--lavender-lt); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--lavender), var(--sky-dk)); border-radius: 99px; transition: width .4s cubic-bezier(.4,0,.2,1); }
+  .question-pill { display: inline-block; background: var(--butter); color: var(--butter-dk); font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 99px; margin-bottom: 1rem; }
+  .question-text { font-family: 'DM Serif Display', serif; font-size: 1.3rem; margin-bottom: 1.5rem; line-height: 1.4; }
+  .options { display: grid; gap: 10px; }
+  .option {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 16px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: var(--lavender-lt);
+    cursor: pointer; transition: all .2s; user-select: none;
+  }
+  .option:hover { border-color: var(--lavender); background: var(--white); transform: translateX(3px); }
+  .option.correct  { border-color: #22c55e; background: var(--mint-lt); }
+  .option.wrong    { border-color: var(--coral-dk); background: var(--coral-lt); }
+  .option.disabled { cursor: not-allowed; pointer-events: none; }
+  .option-letter {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--white); border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: var(--ink-mid); flex-shrink: 0;
+    transition: all .2s;
+  }
+  .option.correct  .option-letter { background: #22c55e; color: #fff; border-color: #22c55e; }
+  .option.wrong    .option-letter { background: var(--coral-dk); color: #fff; border-color: var(--coral-dk); }
+  .feedback { margin-top: 1rem; padding: 12px 16px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; display: none; }
+  .feedback.correct { background: var(--mint-lt); color: #15803d; display: block; }
+  .feedback.wrong   { background: var(--coral-lt); color: var(--coral-dk); display: block; }
+  .timer-ring-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 1.2rem; }
+  .timer-label { font-size: 13px; color: var(--ink-muted); }
+  .timer-val { font-size: 15px; font-weight: 600; color: var(--lavender-dk); min-width: 28px; }
+  .timer-bar { flex: 1; height: 6px; background: var(--lavender-lt); border-radius: 99px; overflow: hidden; }
+  .timer-bar-fill { height: 100%; background: var(--lavender); border-radius: 99px; transition: width 1s linear, background .3s; }
+  .timer-bar-fill.warn { background: #f59e0b; }
+  .timer-bar-fill.danger { background: var(--coral-dk); }
+  .score-ring {
+    width: 140px; height: 140px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.5rem;
+    position: relative;
+  }
+  .score-ring svg { position: absolute; top: 0; left: 0; width: 140px; height: 140px; transform: rotate(-90deg); }
+  .score-inner {
+    width: 110px; height: 110px; border-radius: 50%;
+    background: var(--white); border: 4px solid var(--lavender-lt);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 1; position: relative;
+  }
+  .score-num { font-family: 'DM Serif Display', serif; font-size: 2.2rem; color: var(--lavender-dk); line-height: 1; }
+  .score-sub { font-size: 12px; color: var(--ink-muted); }
+  .score-breakdown { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 1.5rem 0; }
+  .breakdown-tile { background: var(--lavender-lt); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+  .breakdown-tile .num { font-size: 1.5rem; font-weight: 600; }
+  .breakdown-tile .lbl { font-size: 11px; color: var(--ink-muted); }
+  .breakdown-tile.c .num { color: #22c55e; }
+  .breakdown-tile.w .num { color: var(--coral-dk); }
+  .breakdown-tile.s .num { color: var(--sky-dk); }
+  .q-builder { background: var(--lavender-lt); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 10px; }
+  .opt-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .opt-row input { flex: 1; }
+  .correct-toggle {
+    width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--border);
+    background: var(--white); cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: background .2s;
+  }
+  .correct-toggle.marked { background: var(--mint); border-color: #22c55e; }
+  .tabs { display: flex; gap: 6px; background: var(--lavender-lt); padding: 5px; border-radius: 99px; margin-bottom: 1.5rem; }
+  .tab { flex: 1; padding: 8px; border-radius: 99px; font-size: 14px; font-weight: 500; text-align: center; cursor: pointer; color: var(--ink-mid); transition: all .2s; border: none; background: transparent; font-family: inherit; }
+  .tab.active { background: var(--white); color: var(--lavender-dk); box-shadow: 0 2px 8px rgba(124,92,191,0.15); }
+  .quiz-library { display: grid; gap: 10px; margin-top: 1.5rem; }
+  .quiz-card { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 1rem 1.2rem; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: border-color .2s, transform .15s; }
+  .quiz-card:hover { border-color: var(--lavender); transform: translateX(3px); }
+  .quiz-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .quiz-info .title { font-weight: 600; font-size: 15px; }
+  .quiz-info .meta { font-size: 12px; color: var(--ink-muted); }
+  .quiz-badge { margin-left: auto; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 99px; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--lavender); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; color: var(--lavender-dk); }
+  #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
+  .mt-1 { margin-top: 0.5rem; } .mt-2 { margin-top: 1rem; } .mt-3 { margin-top: 1.5rem; }
+  .text-center { text-align: center; }
+  .flex-row { display: flex; gap: 10px; }
+  .flex-1 { flex: 1; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1.2rem 0; }
+  @media (max-width: 540px) { .card { padding: 1.5rem; } .topbar { padding: 0.7rem 1rem; } }
+
+  /* Loading screen */
+  .screen-loading {
+    display: flex; min-height: 100vh;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 1.2rem;
+  }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 4px solid var(--lavender-lt);
+    border-top-color: var(--lavender-dk);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Auth error/success messages */
+  .auth-msg {
+    font-size: 13px; padding: 8px 12px; border-radius: var(--radius-sm);
+    margin-top: 0.75rem; display: none; text-align: center;
+  }
+  .auth-msg.error {
+    display: block; background: var(--coral-lt); color: var(--coral-dk);
+  }
+  .auth-msg.success {
+    display: block; background: var(--mint-lt); color: #15803d;
+  }
+
+  /* Disabled button state */
+  .btn.loading {
+    opacity: 0.6; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<!-- SCREEN 0: Loading -->
+<div id="screen-loading" class="screen-loading">
+  <div class="logo">Quiz<span>Bloom</span></div>
+  <div class="spinner"></div>
+  <p style="color:var(--ink-muted);font-size:14px;">Loading…</p>
+</div>
+
+<!-- SCREEN 1: Auth -->
+<div id="screen-auth" class="screen">
+  <div class="card">
+    <div class="logo">Quiz<span>Bloom</span></div>
+    <p class="tagline">Learn, challenge, grow 🌸</p>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('login')">Sign in</button>
+      <button class="tab" onclick="switchTab('register')">Create account</button>
+    </div>
+    <div id="tab-login">
+      <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com" /></div>
+      <div class="field"><label>Password</label><input type="password" id="login-pwd" placeholder="••••••••" /></div>
+      <button class="btn btn-primary btn-full mt-2" id="login-btn" onclick="doLogin()">Sign in</button>
+      <div class="auth-msg" id="login-msg"></div>
+      <p id="demo-hint" class="text-center mt-2" style="display:none;font-size:13px;color:var(--ink-muted);">Demo mode: any email works. Stats are saved locally.</p>
+    </div>
+    <div id="tab-register" style="display:none;">
+      <div class="flex-row">
+        <div class="field flex-1"><label>First name</label><input type="text" id="reg-first" placeholder="Alex" /></div>
+        <div class="field flex-1"><label>Last name</label><input type="text" id="reg-last" placeholder="Kim" /></div>
+      </div>
+      <div class="field"><label>Email</label><input type="email" id="reg-email" placeholder="you@example.com" /></div>
+      <div class="field"><label>Password</label><input type="password" id="reg-pwd" placeholder="At least 6 characters" /></div>
+      <button class="btn btn-primary btn-full mt-2" id="register-btn" onclick="doRegister()">Create account</button>
+      <div class="auth-msg" id="register-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: Dashboard -->
+<div id="screen-dashboard" class="screen" style="padding-top:5rem;">
+  <div class="topbar">
+    <div class="logo">Quiz<span>Bloom</span></div>
+    <div class="topbar-nav">
+      <div class="avatar" id="user-avatar">AK</div>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+  <div style="width:100%;max-width:560px;padding:0 1rem;">
+    <h2 style="margin-bottom:0.25rem;">Good day, <span id="user-name">Alex</span> 👋</h2>
+    <p style="margin-bottom:1.5rem;">Pick a quiz or create your own.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.5rem;">
+      <div class="breakdown-tile s"><div class="num" id="stat-played">0</div><div class="lbl">Quizzes played</div></div>
+      <div class="breakdown-tile c"><div class="num" id="stat-correct">0</div><div class="lbl">Correct answers</div></div>
+      <div class="breakdown-tile" style="background:var(--butter-lt);"><div class="num" style="color:var(--butter-dk);" id="stat-score">0%</div><div class="lbl">Best score</div></div>
+    </div>
+    <div class="flex-row" style="margin-bottom:1.5rem;">
+      <button class="btn btn-primary flex-1" onclick="showScreen('screen-create')">+ Create quiz</button>
+      <button class="btn btn-secondary flex-1" onclick="selectQuiz(quizDB[Math.floor(Math.random()*quizDB.length)].id)">▶ Play random</button>
+    </div>
+    <h3>Available quizzes</h3>
+    <div class="quiz-library" id="quiz-library"></div>
+  </div>
+</div>
+
+<!-- SCREEN 3: Quiz Player -->
+<div id="screen-quiz" class="screen" style="padding-top:5rem;">
+  <div class="topbar">
+    <div class="logo">Quiz<span>Bloom</span></div>
+    <button class="btn btn-ghost btn-sm" onclick="showScreen('screen-dashboard')">← Back</button>
+  </div>
+  <div class="card">
+    <div class="timer-ring-wrap">
+      <span class="timer-label">Time</span>
+      <div class="timer-bar"><div class="timer-bar-fill" id="timer-fill"></div></div>
+      <span class="timer-val" id="timer-val">20</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span id="q-label">Question 1 of 5</span>
+        <span id="score-live">Score: 0</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+    <div class="question-pill" id="q-category">General</div>
+    <div class="question-text" id="q-text">Loading…</div>
+    <div class="options" id="options-wrap"></div>
+    <div class="feedback" id="feedback-box"></div>
+    <button class="btn btn-primary btn-full mt-3" id="next-btn" style="display:none;" onclick="nextQuestion()">Next question →</button>
+  </div>
+</div>
+
+<!-- SCREEN 4: Results -->
+<div id="screen-score" class="screen">
+  <div class="card text-center">
+    <div class="question-pill">Quiz complete!</div>
+    <h2 style="margin-bottom:0.5rem;" id="score-headline">Amazing work!</h2>
+    <p id="score-msg" style="margin-bottom:1.5rem;">Here's how you did:</p>
+    <div class="score-ring" id="score-ring">
+      <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="70" cy="70" r="60" fill="none" stroke="#ede9fc" stroke-width="10"/>
+        <circle cx="70" cy="70" r="60" fill="none" stroke="#7c5cbf" stroke-width="10"
+          stroke-linecap="round" stroke-dasharray="377" stroke-dashoffset="377" id="ring-circle"/>
+      </svg>
+      <div class="score-inner">
+        <div class="score-num" id="score-pct">—</div>
+        <div class="score-sub">score</div>
+      </div>
+    </div>
+    <div class="score-breakdown">
+      <div class="breakdown-tile c"><div class="num" id="res-correct">0</div><div class="lbl">Correct</div></div>
+      <div class="breakdown-tile w"><div class="num" id="res-wrong">0</div><div class="lbl">Wrong</div></div>
+      <div class="breakdown-tile s"><div class="num" id="res-time">0s</div><div class="lbl">Avg time</div></div>
+    </div>
+    <div class="flex-row mt-3">
+      <button class="btn btn-ghost flex-1" onclick="showScreen('screen-dashboard')">Back to home</button>
+      <button class="btn btn-primary flex-1" onclick="restartQuiz()">Try again</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 5: Creator -->
+<div id="screen-create" class="screen" style="padding-top:5rem;">
+  <div class="topbar">
+    <div class="logo">Quiz<span>Bloom</span></div>
+    <button class="btn btn-ghost btn-sm" onclick="showScreen('screen-dashboard')">← Back</button>
+  </div>
+  <div class="card" style="max-width:580px;">
+    <h2 style="margin-bottom:0.25rem;">Create a quiz</h2>
+    <p style="margin-bottom:1.5rem;">Build and publish your own quiz.</p>
+    <div class="field"><label>Quiz title</label><input type="text" id="create-title" placeholder="e.g. World Geography 101" /></div>
+    <div class="flex-row">
+      <div class="field flex-1"><label>Category</label>
+        <select id="create-cat"><option>Science</option><option>History</option><option>Geography</option><option>Math</option><option>Literature</option><option>Pop Culture</option></select>
+      </div>
+      <div class="field flex-1"><label>Difficulty</label>
+        <select id="create-diff"><option>Easy</option><option selected>Medium</option><option>Hard</option></select>
+      </div>
+    </div>
+    <hr class="divider" />
+    <h3>Questions</h3>
+    <div id="questions-wrap"></div>
+    <button type="button" class="btn btn-ghost btn-sm mt-1" onclick="addQuestion()">+ Add question</button>
+    <hr class="divider" />
+    <button class="btn btn-primary btn-full" onclick="saveQuiz()">Save & publish quiz</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// 🔧 FIREBASE CONFIG — Replace the values below with your own!
+// Leave as-is to run in demo mode (no Firebase account needed).
+// Steps: https://console.firebase.google.com → Project Settings → Web app
+// Enable Email/Password auth + create a Firestore database.
+// ══════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+const isDemoMode = !firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY";
+
+let auth = null;
+let db = null;
+let currentUser = null;
+let stats = { played: 0, correct: 0, bestScore: 0 };
+const STORAGE = { user: 'quizbloom_user', stats: 'quizbloom_stats', quizzes: 'quizbloom_custom_quizzes' };
+
+const quizDB = [
+  {
+    "id": 1,
+    "title": "Junior Scientist",
+    "category": "Science",
+    "difficulty": "Easy",
+    "icon": "🔬",
+    "iconBg": "#e8f4fe",
+    "questions": [
+      {
+        "q": "What is the largest planet in our solar system?",
+        "opts": [
+          "Mars",
+          "Jupiter",
+          "Saturn",
+          "Neptune"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the chemical formula for water?",
+        "opts": [
+          "CO2",
+          "H2O",
+          "O2",
+          "NaCl"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What star is at the center of our solar system?",
+        "opts": [
+          "Proxima Centauri",
+          "Sirius",
+          "The Sun",
+          "Polaris"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What gas do humans need to breathe to live?",
+        "opts": [
+          "Carbon Dioxide",
+          "Oxygen",
+          "Nitrogen",
+          "Hydrogen"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "How many bones does an adult human have?",
+        "opts": [
+          "106",
+          "206",
+          "306",
+          "406"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which planet is known as the Red Planet?",
+        "opts": [
+          "Venus",
+          "Jupiter",
+          "Mars",
+          "Saturn"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What force pulls objects toward the Earth?",
+        "opts": [
+          "Magnetism",
+          "Gravity",
+          "Friction",
+          "Tension"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the frozen form of water called?",
+        "opts": [
+          "Steam",
+          "Ice",
+          "Dew",
+          "Frost"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which animal is known as the king of the jungle?",
+        "opts": [
+          "Tiger",
+          "Lion",
+          "Elephant",
+          "Gorilla"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "How many legs does a spider have?",
+        "opts": [
+          "6",
+          "8",
+          "10",
+          "12"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the primary source of energy for Earth?",
+        "opts": [
+          "The Moon",
+          "The Sun",
+          "Wind",
+          "Geothermal"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which organ pumps blood through the human body?",
+        "opts": [
+          "Brain",
+          "Lungs",
+          "Heart",
+          "Kidney"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What do bees collect from flowers to make honey?",
+        "opts": [
+          "Pollen",
+          "Nectar",
+          "Sap",
+          "Water"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the boiling point of water in Celsius?",
+        "opts": [
+          "50°C",
+          "100°C",
+          "150°C",
+          "200°C"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which baby animal hatches from an egg?",
+        "opts": [
+          "Puppy",
+          "Kitten",
+          "Chick",
+          "Calf"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What part of the plant conducts photosynthesis?",
+        "opts": [
+          "Root",
+          "Stem",
+          "Leaf",
+          "Flower"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What color do you get by mixing blue and yellow?",
+        "opts": [
+          "Green",
+          "Purple",
+          "Orange",
+          "Brown"
+        ],
+        "correct": 0
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Cosmos & Chemistry",
+    "category": "Science",
+    "difficulty": "Medium",
+    "icon": "🚀",
+    "iconBg": "#e8f4fe",
+    "questions": [
+      {
+        "q": "Which planet is closest to the Sun?",
+        "opts": [
+          "Venus",
+          "Mercury",
+          "Earth",
+          "Mars"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the chemical symbol for Gold?",
+        "opts": [
+          "Gd",
+          "Go",
+          "Au",
+          "Ag"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "How many chambers are in the human heart?",
+        "opts": [
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the approximate speed of light?",
+        "opts": [
+          "3,000 km/s",
+          "30,000 km/s",
+          "300,000 km/s",
+          "3,000,000 km/s"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which gas makes up the majority of Earth's atmosphere?",
+        "opts": [
+          "Oxygen",
+          "Carbon Dioxide",
+          "Nitrogen",
+          "Argon"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the main structural component of plant cell walls?",
+        "opts": [
+          "Starch",
+          "Cellulose",
+          "Glycogen",
+          "Chitin"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which planet has the most prominent ring system?",
+        "opts": [
+          "Jupiter",
+          "Uranus",
+          "Neptune",
+          "Saturn"
+        ],
+        "correct": 3
+      },
+      {
+        "q": "What type of chemical bond involves the sharing of electron pairs?",
+        "opts": [
+          "Ionic",
+          "Covalent",
+          "Metallic",
+          "Hydrogen"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the hardest natural substance on Earth?",
+        "opts": [
+          "Gold",
+          "Iron",
+          "Diamond",
+          "Quartz"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the unit of electrical resistance?",
+        "opts": [
+          "Ampere",
+          "Volt",
+          "Ohm",
+          "Watt"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which organelle is known as the powerhouse of the cell?",
+        "opts": [
+          "Nucleus",
+          "Ribosome",
+          "Mitochondria",
+          "Golgi apparatus"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which layer of the atmosphere contains the ozone layer?",
+        "opts": [
+          "Troposphere",
+          "Stratosphere",
+          "Mesosphere",
+          "Thermosphere"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What pigment gives leaves their green color?",
+        "opts": [
+          "Carotenoid",
+          "Chlorophyll",
+          "Anthocyanin",
+          "Melanin"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "How many elements are currently in the standard periodic table?",
+        "opts": [
+          "92",
+          "108",
+          "118",
+          "128"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the primary greenhouse gas emitted through human activities?",
+        "opts": [
+          "Methane",
+          "Nitrous Oxide",
+          "Carbon Dioxide",
+          "Ozone"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What device is used to measure electric current?",
+        "opts": [
+          "Voltmeter",
+          "Ammeter",
+          "Ohmmeter",
+          "Galvanometer"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which scientist proposed the three laws of motion?",
+        "opts": [
+          "Albert Einstein",
+          "Galileo Galilei",
+          "Isaac Newton",
+          "Nikola Tesla"
+        ],
+        "correct": 2
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "title": "Quantum & Cellular Frontiers",
+    "category": "Science",
+    "difficulty": "Hard",
+    "icon": "⚛️",
+    "iconBg": "#e8f4fe",
+    "questions": [
+      {
+        "q": "What particle is the mediator of the electromagnetic force?",
+        "opts": [
+          "Gluon",
+          "W boson",
+          "Photon",
+          "Graviton"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the absolute zero temperature in Celsius?",
+        "opts": [
+          "0°C",
+          "-100°C",
+          "-273.15°C",
+          "-459.67°C"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which biological macromolecules are polymers of amino acids?",
+        "opts": [
+          "Carbohydrates",
+          "Lipids",
+          "Proteins",
+          "Nucleic acids"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the approximate half-life of Carbon-14?",
+        "opts": [
+          "573 years",
+          "1,260 years",
+          "5,730 years",
+          "24,000 years"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What equation describes how the quantum state of a physical system changes with time?",
+        "opts": [
+          "Einstein's equation",
+          "Schrödinger equation",
+          "Maxwell's equation",
+          "Planck's equation"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which cellular organelle is responsible for lipid synthesis and detoxification?",
+        "opts": [
+          "Rough Endoplasmic Reticulum",
+          "Smooth Endoplasmic Reticulum",
+          "Lysosome",
+          "Peroxisome"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the escape velocity of Earth?",
+        "opts": [
+          "5.5 km/s",
+          "8.2 km/s",
+          "11.2 km/s",
+          "16.7 km/s"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What law states that the pressure of a given mass of gas is inversely proportional to its volume at constant temperature?",
+        "opts": [
+          "Boyle's Law",
+          "Charles's Law",
+          "Gay-Lussac's Law",
+          "Avogadro's Law"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "What type of star is extremely dense and composed almost entirely of neutrons?",
+        "opts": [
+          "White Dwarf",
+          "Neutron Star",
+          "Red Giant",
+          "Supernova"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which subatomic particle is not composed of quarks?",
+        "opts": [
+          "Proton",
+          "Neutron",
+          "Electron",
+          "Pion"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What enzyme is responsible for unwinding the double helix of DNA during replication?",
+        "opts": [
+          "DNA Polymerase",
+          "DNA Helicase",
+          "DNA Ligase",
+          "RNA Primase"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the SI unit of magnetic flux density?",
+        "opts": [
+          "Weber",
+          "Henry",
+          "Tesla",
+          "Lumen"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What name is given to the boundary surrounding a black hole from which nothing can escape?",
+        "opts": [
+          "Singularity",
+          "Accretion Disk",
+          "Event Horizon",
+          "Ergosphere"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which phase of mitosis involves chromosomes lining up along the equator of the cell?",
+        "opts": [
+          "Prophase",
+          "Metaphase",
+          "Anaphase",
+          "Telophase"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the most abundant metal in the Earth's crust?",
+        "opts": [
+          "Iron",
+          "Aluminum",
+          "Silicon",
+          "Calcium"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What thermodynamic quantity is a measure of a system's thermal energy per unit temperature that is unavailable for doing useful work?",
+        "opts": [
+          "Enthalpy",
+          "Entropy",
+          "Gibbs Free Energy",
+          "Internal Energy"
+        ],
+        "correct": 1
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "title": "Ancient Legends & Landmarks",
+    "category": "History",
+    "difficulty": "Easy",
+    "icon": "🏛️",
+    "iconBg": "#fffbea",
+    "questions": [
+      {
+        "q": "Who was the first president of the United States?",
+        "opts": [
+          "Thomas Jefferson",
+          "Abraham Lincoln",
+          "George Washington",
+          "John Adams"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "The Great Sphinx is located in which country?",
+        "opts": [
+          "Greece",
+          "Italy",
+          "Egypt",
+          "Mexico"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which ancient civilization built the Colosseum in Rome?",
+        "opts": [
+          "Greeks",
+          "Romans",
+          "Egyptians",
+          "Persians"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who was the legendary queen of ancient Egypt famous for her alliances with Roman leaders?",
+        "opts": [
+          "Nefertiti",
+          "Cleopatra",
+          "Hatshepsut",
+          "Sobekneferu"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "In which country did the ancient Olympic Games originate?",
+        "opts": [
+          "Italy",
+          "Egypt",
+          "Greece",
+          "China"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which famous passenger ship sank in 1912 after hitting an iceberg?",
+        "opts": [
+          "Lusitania",
+          "Titanic",
+          "Britannic",
+          "Queen Mary"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who was the first man to walk on the moon in 1969?",
+        "opts": [
+          "Buzz Aldrin",
+          "Yuri Gagarin",
+          "Neil Armstrong",
+          "Michael Collins"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What structure divided the city of Berlin from 1961 to 1989?",
+        "opts": [
+          "Berlin Wall",
+          "Iron Curtain",
+          "German Barrier",
+          "Hindenburg Line"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which country was ruled by dynasties of Pharaohs?",
+        "opts": [
+          "Greece",
+          "Rome",
+          "Egypt",
+          "Persia"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What was the name of the ship that carried the Pilgrims to America in 1620?",
+        "opts": [
+          "Santa Maria",
+          "Mayflower",
+          "Endeavour",
+          "Beagle"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who was the principal author of the United States Declaration of Independence?",
+        "opts": [
+          "Benjamin Franklin",
+          "George Washington",
+          "Thomas Jefferson",
+          "Alexander Hamilton"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which British Queen ruled for 63 years during the height of the British Empire in the 19th century?",
+        "opts": [
+          "Queen Elizabeth I",
+          "Queen Victoria",
+          "Queen Mary",
+          "Queen Anne"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who was the prominent leader of the American Civil Rights Movement who delivered the 'I Have a Dream' speech?",
+        "opts": [
+          "Malcolm X",
+          "Martin Luther King Jr.",
+          "Rosa Parks",
+          "John Lewis"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which ancient city was famous for the legendary Trojan Horse trick?",
+        "opts": [
+          "Athens",
+          "Sparta",
+          "Troy",
+          "Carthage"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which Macedonian king conquered the Persian Empire and created one of the largest empires of the ancient world?",
+        "opts": [
+          "Julius Caesar",
+          "Alexander the Great",
+          "Charlemagne",
+          "Genghis Khan"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What class of military warriors served feudal lords in ancient Japan?",
+        "opts": [
+          "Samurai",
+          "Ninja",
+          "Shogun",
+          "Ronin"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which volcano erupted in 79 AD, destroying the Roman city of Pompeii?",
+        "opts": [
+          "Mount Etna",
+          "Mount Vesuvius",
+          "Mount St. Helens",
+          "Krakatoa"
+        ],
+        "correct": 1
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "title": "Epochs of Discovery",
+    "category": "History",
+    "difficulty": "Medium",
+    "icon": "⛵",
+    "iconBg": "#fffbea",
+    "questions": [
+      {
+        "q": "In what year did Christopher Columbus first cross the Atlantic Ocean to reach the Americas?",
+        "opts": [
+          "1492",
+          "1498",
+          "1502",
+          "1506"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Who invented the movable-type printing press around 1440?",
+        "opts": [
+          "Johannes Gutenberg",
+          "William Caxton",
+          "Leonardo da Vinci",
+          "Galileo Galilei"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which major war was fought between the Northern and Southern states of the US from 1861 to 1865?",
+        "opts": [
+          "Revolutionary War",
+          "War of 1812",
+          "American Civil War",
+          "Spanish-American War"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which French military commander became Emperor of the French and conquered much of Europe in the early 19th century?",
+        "opts": [
+          "Louis XIV",
+          "Charles de Gaulle",
+          "Napoleon Bonaparte",
+          "Robespierre"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What peace treaty ended World War I in 1919?",
+        "opts": [
+          "Treaty of Paris",
+          "Treaty of Versailles",
+          "Treaty of Utrecht",
+          "Treaty of Ghent"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which devastating pandemic swept through Europe in the mid-14th century, killing an estimated 30-60% of the population?",
+        "opts": [
+          "Spanish Flu",
+          "Smallpox",
+          "Black Death",
+          "Cholera"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who was the Norwegian explorer who led the first expedition to reach the South Pole in 1911?",
+        "opts": [
+          "Robert Falcon Scott",
+          "Roald Amundsen",
+          "Ernest Shackleton",
+          "Fridtjof Nansen"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What major socio-political revolution began in 1789 with the storming of the Bastille?",
+        "opts": [
+          "Russian Revolution",
+          "French Revolution",
+          "Industrial Revolution",
+          "Glorious Revolution"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which English king broke away from the Roman Catholic Church and had six wives?",
+        "opts": [
+          "Henry VII",
+          "Henry VIII",
+          "Edward VI",
+          "Charles I"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "In what year was the Magna Carta signed by King John of England?",
+        "opts": [
+          "1066",
+          "1215",
+          "1415",
+          "1588"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "The fall of which empire in 1453 marked the end of the Middle Ages?",
+        "opts": [
+          "Roman Empire",
+          "Byzantine Empire",
+          "Holy Roman Empire",
+          "Ottoman Empire"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who was the first woman to win a Nobel Prize, and the only person to win in two different scientific fields?",
+        "opts": [
+          "Rosalind Franklin",
+          "Marie Curie",
+          "Ada Lovelace",
+          "Jane Goodall"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "In which city was US President John F. Kennedy assassinated in 1963?",
+        "opts": [
+          "Washington D.C.",
+          "New York City",
+          "Dallas",
+          "Los Angeles"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which European country pioneered the Age of Discovery under Prince Henry the Navigator?",
+        "opts": [
+          "Spain",
+          "England",
+          "Portugal",
+          "France"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who was the dictator of the Soviet Union during World War II?",
+        "opts": [
+          "Vladimir Lenin",
+          "Leon Trotsky",
+          "Joseph Stalin",
+          "Nikita Khrushchev"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What was the Allied code name for the Normandy landings on D-Day, June 6, 1944?",
+        "opts": [
+          "Operation Barbarossa",
+          "Operation Overlord",
+          "Operation Torch",
+          "Operation Sea Lion"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which Chinese dynasty was responsible for building the majority of the visible Great Wall of China today?",
+        "opts": [
+          "Han Dynasty",
+          "Tang Dynasty",
+          "Ming Dynasty",
+          "Qing Dynasty"
+        ],
+        "correct": 2
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "title": "Modern Revolutions & Treaties",
+    "category": "History",
+    "difficulty": "Hard",
+    "icon": "📜",
+    "iconBg": "#fffbea",
+    "questions": [
+      {
+        "q": "In what year did the Bolshevik-led Russian Revolution occur?",
+        "opts": [
+          "1905",
+          "1914",
+          "1917",
+          "1922"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who served as Prime Minister of Great Britain during the majority of World War II?",
+        "opts": [
+          "Neville Chamberlain",
+          "Clement Attlee",
+          "Winston Churchill",
+          "Anthony Eden"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which series of peace treaties signed in 1648 ended the Thirty Years' War in the Holy Roman Empire?",
+        "opts": [
+          "Peace of Utrecht",
+          "Peace of Westphalia",
+          "Treaty of Nantes",
+          "Peace of Augsburg"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who was the first official Emperor of the Roman Empire, ruling from 27 BC until 14 AD?",
+        "opts": [
+          "Julius Caesar",
+          "Augustus",
+          "Nero",
+          "Tiberius"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which battle in June 1815 marked Napoleon Bonaparte's final defeat?",
+        "opts": [
+          "Battle of Austerlitz",
+          "Battle of Trafalgar",
+          "Battle of Waterloo",
+          "Battle of Leipzig"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which empire was officially dissolved in the aftermath of World War I and partitioned by the Treaty of Sèvres?",
+        "opts": [
+          "Austro-Hungarian Empire",
+          "Russian Empire",
+          "Ottoman Empire",
+          "German Empire"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who was the principal leader and founder of the People's Republic of China in 1949?",
+        "opts": [
+          "Sun Yat-sen",
+          "Chiang Kai-shek",
+          "Mao Zedong",
+          "Deng Xiaoping"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What was the name of the democratic government established in Germany in 1919 after WWI?",
+        "opts": [
+          "Weimar Republic",
+          "Third Reich",
+          "German Confederation",
+          "Federal Republic"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which February 1945 conference brought together Churchill, Roosevelt, and Stalin to discuss Europe's post-war reorganization?",
+        "opts": [
+          "Potsdam Conference",
+          "Tehran Conference",
+          "Yalta Conference",
+          "Casablanca Conference"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who was the 'Iron Chancellor' who unified Germany in 1871 and served as its first Chancellor?",
+        "opts": [
+          "Wilhelm I",
+          "Otto von Bismarck",
+          "Friedrich Ebert",
+          "Paul von Hindenburg"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What historical event in 1517 is widely regarded as the start of the Protestant Reformation?",
+        "opts": [
+          "Diet of Worms",
+          "Martin Luther nailing the 95 Theses",
+          "Signing of the Peace of Augsburg",
+          "Translation of the Bible to German"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which Roman emperor converted to Christianity and legalized the religion across the empire with the Edict of Milan?",
+        "opts": [
+          "Constantine the Great",
+          "Marcus Aurelius",
+          "Diocletian",
+          "Trajan"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which Mesoamerican empire did Spanish conquistador Hernán Cortés defeat and conquer between 1519 and 1521?",
+        "opts": [
+          "Inca Empire",
+          "Maya Civilization",
+          "Aztec Empire",
+          "Zapotec Empire"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which French King was executed by guillotine in January 1793 during the French Revolution?",
+        "opts": [
+          "Louis XIV",
+          "Louis XV",
+          "Louis XVI",
+          "Louis XVIII"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which war was fought in the early 1700s to determine who would succeed King Charles II of Spain?",
+        "opts": [
+          "War of the Spanish Succession",
+          "Thirty Years' War",
+          "Seven Years' War",
+          "War of the Austrian Succession"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Who was the last Tsar of the Russian Empire, executed alongside his family in 1918?",
+        "opts": [
+          "Alexander II",
+          "Alexander III",
+          "Nicholas II",
+          "Peter the Great"
+        ],
+        "correct": 2
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "title": "Continents & Capital Cities",
+    "category": "Geography",
+    "difficulty": "Easy",
+    "icon": "🌍",
+    "iconBg": "#ede9fc",
+    "questions": [
+      {
+        "q": "What is the capital city of France?",
+        "opts": [
+          "London",
+          "Berlin",
+          "Paris",
+          "Rome"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which continent contains the vast Sahara Desert?",
+        "opts": [
+          "Asia",
+          "Africa",
+          "South America",
+          "Australia"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the capital city of Japan?",
+        "opts": [
+          "Seoul",
+          "Beijing",
+          "Tokyo",
+          "Bangkok"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which is the largest continent on Earth by both land area and population?",
+        "opts": [
+          "North America",
+          "Africa",
+          "Europe",
+          "Asia"
+        ],
+        "correct": 3
+      },
+      {
+        "q": "What ocean lies between Europe and North America?",
+        "opts": [
+          "Pacific Ocean",
+          "Atlantic Ocean",
+          "Indian Ocean",
+          "Arctic Ocean"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the capital city of the United Kingdom?",
+        "opts": [
+          "Edinburgh",
+          "Dublin",
+          "Cardiff",
+          "London"
+        ],
+        "correct": 3
+      },
+      {
+        "q": "Which nation is both a country and its own continent?",
+        "opts": [
+          "New Zealand",
+          "Madagascar",
+          "Australia",
+          "Greenland"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the capital city of Italy?",
+        "opts": [
+          "Venice",
+          "Rome",
+          "Florence",
+          "Milan"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which country currently has the largest population in the world?",
+        "opts": [
+          "China",
+          "United States",
+          "India",
+          "Indonesia"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the capital city of Canada?",
+        "opts": [
+          "Toronto",
+          "Montreal",
+          "Vancouver",
+          "Ottawa"
+        ],
+        "correct": 3
+      },
+      {
+        "q": "Which continent lies directly south of Europe?",
+        "opts": [
+          "Asia",
+          "Africa",
+          "Antarctica",
+          "South America"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the capital city of Australia?",
+        "opts": [
+          "Sydney",
+          "Melbourne",
+          "Canberra",
+          "Brisbane"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which ocean is the largest and deepest on Earth?",
+        "opts": [
+          "Atlantic Ocean",
+          "Indian Ocean",
+          "Pacific Ocean",
+          "Southern Ocean"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the capital city of Spain?",
+        "opts": [
+          "Barcelona",
+          "Madrid",
+          "Seville",
+          "Valencia"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "On which continent is the Amazon Rainforest primarily located?",
+        "opts": [
+          "Africa",
+          "Asia",
+          "South America",
+          "North America"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the capital city of Germany?",
+        "opts": [
+          "Munich",
+          "Frankfurt",
+          "Berlin",
+          "Hamburg"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which country is famous for its ancient pyramids and is situated in northeast Africa?",
+        "opts": [
+          "Morocco",
+          "Egypt",
+          "Kenya",
+          "South Africa"
+        ],
+        "correct": 1
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "title": "Rivers, Peaks & Borders",
+    "category": "Geography",
+    "difficulty": "Medium",
+    "icon": "🏔️",
+    "iconBg": "#ede9fc",
+    "questions": [
+      {
+        "q": "Which river is widely considered the longest in the world?",
+        "opts": [
+          "Amazon River",
+          "Nile River",
+          "Yangtze River",
+          "Mississippi River"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the tallest mountain above sea level in the world?",
+        "opts": [
+          "K2",
+          "Mount Kilimanjaro",
+          "Mount Everest",
+          "Mount Denali"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which sea is situated between Southern Europe and Northern Africa?",
+        "opts": [
+          "Red Sea",
+          "Caribbean Sea",
+          "Mediterranean Sea",
+          "Black Sea"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the capital city of Brazil?",
+        "opts": [
+          "Rio de Janeiro",
+          "São Paulo",
+          "Brasília",
+          "Salvador"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which nation shares the longest international land border with the United States?",
+        "opts": [
+          "Mexico",
+          "Canada",
+          "Russia",
+          "Cuba"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the largest country in the world by total land area?",
+        "opts": [
+          "Canada",
+          "China",
+          "United States",
+          "Russia"
+        ],
+        "correct": 3
+      },
+      {
+        "q": "Which mountain range is traditionally considered the boundary between Europe and Asia?",
+        "opts": [
+          "Alps",
+          "Ural Mountains",
+          "Himalayas",
+          "Andes"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What capital city has the highest administrative elevation in the world?",
+        "opts": [
+          "Quito",
+          "La Paz",
+          "Bogotá",
+          "Lhasa"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which large island nation is located off the southeast coast of Africa?",
+        "opts": [
+          "Sri Lanka",
+          "Madagascar",
+          "New Zealand",
+          "Iceland"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the capital city of India?",
+        "opts": [
+          "Mumbai",
+          "Kolkata",
+          "New Delhi",
+          "Chennai"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which famous river flows directly through the city of London?",
+        "opts": [
+          "River Seine",
+          "River Danube",
+          "River Rhine",
+          "River Thames"
+        ],
+        "correct": 3
+      },
+      {
+        "q": "What is the smallest independent state in the world by both area and population?",
+        "opts": [
+          "Monaco",
+          "San Marino",
+          "Liechtenstein",
+          "Vatican City"
+        ],
+        "correct": 3
+      },
+      {
+        "q": "What is the capital city of Egypt?",
+        "opts": [
+          "Alexandria",
+          "Cairo",
+          "Luxor",
+          "Giza"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which man-made waterway connects the Atlantic and Pacific oceans?",
+        "opts": [
+          "Suez Canal",
+          "Kiel Canal",
+          "Panama Canal",
+          "Erie Canal"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the administrative capital of South Africa?",
+        "opts": [
+          "Cape Town",
+          "Johannesburg",
+          "Pretoria",
+          "Durban"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which East Asian country is historically referred to as the 'Land of the Rising Sun'?",
+        "opts": [
+          "South Korea",
+          "China",
+          "Japan",
+          "Vietnam"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What body of water lies between Australia and New Zealand?",
+        "opts": [
+          "Coral Sea",
+          "Tasman Sea",
+          "Arafura Sea",
+          "Timor Sea"
+        ],
+        "correct": 1
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "title": "Geopolitical Wonders & Trivia",
+    "category": "Geography",
+    "difficulty": "Hard",
+    "icon": "🗺️",
+    "iconBg": "#ede9fc",
+    "questions": [
+      {
+        "q": "Which desert is known as the driest non-polar desert in the world?",
+        "opts": [
+          "Gobi Desert",
+          "Kalahari Desert",
+          "Atacama Desert",
+          "Sahara Desert"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the capital city of Turkey?",
+        "opts": [
+          "Istanbul",
+          "Ankara",
+          "Izmir",
+          "Antalya"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which country contains the highest number of natural lakes in the world?",
+        "opts": [
+          "Russia",
+          "Canada",
+          "Brazil",
+          "United States"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the capital city of Switzerland?",
+        "opts": [
+          "Zurich",
+          "Geneva",
+          "Bern",
+          "Basel"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which island is the largest island in the world that is not a continent?",
+        "opts": [
+          "Australia",
+          "Greenland",
+          "New Guinea",
+          "Borneo"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the deepest known point in the Earth's oceans?",
+        "opts": [
+          "Java Trench",
+          "Mariana Trench (Challenger Deep)",
+          "Puerto Rico Trench",
+          "Sunda Trench"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which African nation was historically known to Europeans as Abyssinia?",
+        "opts": [
+          "Egypt",
+          "Ethiopia",
+          "Sudan",
+          "Morocco"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the capital city of Vietnam?",
+        "opts": [
+          "Ho Chi Minh City",
+          "Hanoi",
+          "Da Nang",
+          "Hue"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which European nation shares land borders with the most other countries (9)?",
+        "opts": [
+          "France",
+          "Russia",
+          "Germany",
+          "Austria"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the capital city of New Zealand?",
+        "opts": [
+          "Auckland",
+          "Wellington",
+          "Christchurch",
+          "Hamilton"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What narrow strait separates Spain from Morocco?",
+        "opts": [
+          "Strait of Malacca",
+          "Strait of Gibraltar",
+          "Strait of Hormuz",
+          "Bosporus Strait"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which landlocked country is entirely surrounded by the territory of South Africa?",
+        "opts": [
+          "Eswatini",
+          "Lesotho",
+          "Botswana",
+          "Namibia"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the capital city of Iceland?",
+        "opts": [
+          "Reykjavík",
+          "Akureyri",
+          "Kopavogur",
+          "Hafnarfjordur"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which sea has the highest salinity and is the lowest land elevation on Earth?",
+        "opts": [
+          "Red Sea",
+          "Dead Sea",
+          "Caspian Sea",
+          "Baltic Sea"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the capital city of Morocco?",
+        "opts": [
+          "Casablanca",
+          "Marrakech",
+          "Rabat",
+          "Fez"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which river basin is the largest in the world by water volume discharge?",
+        "opts": [
+          "Nile River Basin",
+          "Congo River Basin",
+          "Amazon River Basin",
+          "Mississippi River Basin"
+        ],
+        "correct": 2
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "title": "Arithmetic & Shapes",
+    "category": "Math",
+    "difficulty": "Easy",
+    "icon": "🔢",
+    "iconBg": "#edfdf5",
+    "questions": [
+      {
+        "q": "What is the sum of 5 and 7?",
+        "opts": [
+          "10",
+          "11",
+          "12",
+          "13"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "How many sides does a triangle have?",
+        "opts": [
+          "3",
+          "4",
+          "5",
+          "6"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "What is the product of 8 and 9?",
+        "opts": [
+          "64",
+          "72",
+          "80",
+          "81"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is 100 divided by 4?",
+        "opts": [
+          "20",
+          "25",
+          "30",
+          "50"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is 20 minus 8?",
+        "opts": [
+          "10",
+          "11",
+          "12",
+          "14"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "How many sides does a hexagon have?",
+        "opts": [
+          "5",
+          "6",
+          "7",
+          "8"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is half of 50?",
+        "opts": [
+          "20",
+          "25",
+          "30",
+          "35"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is 9 plus 9?",
+        "opts": [
+          "16",
+          "17",
+          "18",
+          "20"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which geometric shape has no corners?",
+        "opts": [
+          "Triangle",
+          "Square",
+          "Circle",
+          "Pentagon"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is 6 times 6?",
+        "opts": [
+          "30",
+          "32",
+          "36",
+          "42"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is 30 divided by 5?",
+        "opts": [
+          "5",
+          "6",
+          "7",
+          "8"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "How many degrees are in a right angle?",
+        "opts": [
+          "45",
+          "90",
+          "180",
+          "360"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is 12 plus 13?",
+        "opts": [
+          "23",
+          "24",
+          "25",
+          "26"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is 15 minus 9?",
+        "opts": [
+          "5",
+          "6",
+          "7",
+          "8"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "How many sides does a pentagon have?",
+        "opts": [
+          "4",
+          "5",
+          "6",
+          "7"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is 2 times 10?",
+        "opts": [
+          "12",
+          "18",
+          "20",
+          "22"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is 50 plus 50?",
+        "opts": [
+          "80",
+          "90",
+          "100",
+          "110"
+        ],
+        "correct": 2
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "title": "Algebraic Adventures",
+    "category": "Math",
+    "difficulty": "Medium",
+    "icon": "📐",
+    "iconBg": "#edfdf5",
+    "questions": [
+      {
+        "q": "What is the square root of 144?",
+        "opts": [
+          "10",
+          "11",
+          "12",
+          "13"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Solve for x: 3x = 18.",
+        "opts": [
+          "4",
+          "5",
+          "6",
+          "8"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the next prime number after 13?",
+        "opts": [
+          "14",
+          "15",
+          "17",
+          "19"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is 2 to the power of 5 (2^5)?",
+        "opts": [
+          "16",
+          "25",
+          "32",
+          "64"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is 25% of 200?",
+        "opts": [
+          "25",
+          "50",
+          "75",
+          "100"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "If x + 12 = 30, what is x?",
+        "opts": [
+          "12",
+          "15",
+          "18",
+          "22"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the square of 15 (15^2)?",
+        "opts": [
+          "125",
+          "225",
+          "250",
+          "300"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the product of 3 × 3 × 3?",
+        "opts": [
+          "9",
+          "18",
+          "27",
+          "81"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the perimeter of a square with a side length of 5 cm?",
+        "opts": [
+          "15 cm",
+          "20 cm",
+          "25 cm",
+          "30 cm"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What are the prime factors of 10?",
+        "opts": [
+          "1 and 10",
+          "2 and 5",
+          "1, 2 and 5",
+          "5 and 10"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the value of Pi (π) rounded to two decimal places?",
+        "opts": [
+          "3.12",
+          "3.14",
+          "3.16",
+          "3.18"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "If a triangle has a base of 4 and a height of 5, what is its area?",
+        "opts": [
+          "9",
+          "10",
+          "12",
+          "20"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is 15% of 60?",
+        "opts": [
+          "6",
+          "8",
+          "9",
+          "12"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Solve for x: 2x - 5 = 11.",
+        "opts": [
+          "6",
+          "7",
+          "8",
+          "9"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the greatest common divisor (GCD) of 12 and 18?",
+        "opts": [
+          "2",
+          "3",
+          "6",
+          "12"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the value of 5 cubed (5^3)?",
+        "opts": [
+          "15",
+          "25",
+          "75",
+          "125"
+        ],
+        "correct": 3
+      },
+      {
+        "q": "What is the sum of the angles in a flat triangle?",
+        "opts": [
+          "90 degrees",
+          "180 degrees",
+          "270 degrees",
+          "360 degrees"
+        ],
+        "correct": 1
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "title": "Calculus & Probability Master",
+    "category": "Math",
+    "difficulty": "Hard",
+    "icon": "🧮",
+    "iconBg": "#edfdf5",
+    "questions": [
+      {
+        "q": "What is the derivative of x^2 with respect to x?",
+        "opts": [
+          "x",
+          "2x",
+          "x^3 / 3",
+          "2"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the value of e (Euler's number) to two decimal places?",
+        "opts": [
+          "2.56",
+          "2.72",
+          "3.14",
+          "1.61"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the probability of rolling a 6 on a fair six-sided die?",
+        "opts": [
+          "1/2",
+          "1/3",
+          "1/6",
+          "1/12"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the limit of 1/x as x approaches infinity?",
+        "opts": [
+          "0",
+          "1",
+          "Infinity",
+          "Undefined"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "What is the sum of the first 10 positive integers?",
+        "opts": [
+          "45",
+          "50",
+          "55",
+          "60"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the indefinite integral of 2x dx?",
+        "opts": [
+          "x^2",
+          "x^2 + C",
+          "2x^2 + C",
+          "2 + C"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "In a right-angled triangle, if the shorter sides are 3 and 4, what is the hypotenuse?",
+        "opts": [
+          "5",
+          "6",
+          "7",
+          "8"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "What is the value of log10(1000)?",
+        "opts": [
+          "1",
+          "2",
+          "3",
+          "10"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "How many ways can you arrange 3 distinct books on a shelf?",
+        "opts": [
+          "3",
+          "6",
+          "9",
+          "27"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Solve for x: x^2 - 9 = 0.",
+        "opts": [
+          "3",
+          "-3",
+          "3 and -3",
+          "9 and -9"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the derivative of sin(x)?",
+        "opts": [
+          "cos(x)",
+          "-cos(x)",
+          "sin(x)",
+          "-sin(x)"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "What is the sum of the infinite geometric series 1 + 1/2 + 1/4 + 1/8 + ...?",
+        "opts": [
+          "1.5",
+          "1.75",
+          "2",
+          "Infinity"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the coefficient of x in the expansion of (x + 2)^2?",
+        "opts": [
+          "1",
+          "2",
+          "4",
+          "8"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the value of 5 factorial (5!)?",
+        "opts": [
+          "25",
+          "60",
+          "120",
+          "240"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What mathematical theorem states that a^2 + b^2 = c^2 for a right triangle?",
+        "opts": [
+          "Fermat's Theorem",
+          "Pythagorean Theorem",
+          "Euler's Theorem",
+          "Fibonacci's Theorem"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the derivative of e^x with respect to x?",
+        "opts": [
+          "x * e^(x-1)",
+          "e^x",
+          "ln(x)",
+          "e^(x-1)"
+        ],
+        "correct": 1
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "title": "Fairy Tales & Fables",
+    "category": "Literature",
+    "difficulty": "Easy",
+    "icon": "📚",
+    "iconBg": "#ede9fc",
+    "questions": [
+      {
+        "q": "Who wrote the play 'Romeo and Juliet'?",
+        "opts": [
+          "Charles Dickens",
+          "William Shakespeare",
+          "Mark Twain",
+          "Jane Austen"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which puppet's nose grows when he tells a lie?",
+        "opts": [
+          "Pinocchio",
+          "Peter Pan",
+          "Aladdin",
+          "Mowgli"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which fairy tale character lost her glass slipper at the ball?",
+        "opts": [
+          "Snow White",
+          "Sleeping Beauty",
+          "Cinderella",
+          "Rapunzel"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who wrote the tragedy 'Hamlet'?",
+        "opts": [
+          "William Shakespeare",
+          "John Milton",
+          "Christopher Marlowe",
+          "Geoffrey Chaucer"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "What is the name of the orphan wizard boy in J.K. Rowling's book series?",
+        "opts": [
+          "Percy Jackson",
+          "Harry Potter",
+          "Frodo Baggins",
+          "Artemis Fowl"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who is the main girl character who fell down the rabbit hole into Wonderland?",
+        "opts": [
+          "Wendy",
+          "Dorothy",
+          "Alice",
+          "Lucy"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which children's book author wrote 'The Cat in the Hat'?",
+        "opts": [
+          "Roald Dahl",
+          "Dr. Seuss",
+          "Beatrix Potter",
+          "Astrid Lindgren"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What animal raced the tortoise in Aesop's famous fable?",
+        "opts": [
+          "Fox",
+          "Hare",
+          "Deer",
+          "Squirrel"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which siblings discovered a house made of sweets in the forest?",
+        "opts": [
+          "Jack and Jill",
+          "Hansel and Gretel",
+          "Peter and Wendy",
+          "Romulus and Remus"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which teddy bear character loves eating honey in the Hundred Acre Wood?",
+        "opts": [
+          "Paddington Bear",
+          "Winnie-the-Pooh",
+          "Yogi Bear",
+          "Rupert Bear"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who wrote the classic holiday novel 'A Christmas Carol'?",
+        "opts": [
+          "Charles Dickens",
+          "Leo Tolstoy",
+          "Mark Twain",
+          "Oscar Wilde"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which famous literary boy flew away to Neverland so he would never grow up?",
+        "opts": [
+          "Huckleberry Finn",
+          "Tom Sawyer",
+          "Peter Pan",
+          "Oliver Twist"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What sturdy material did the third little pig use to build his house?",
+        "opts": [
+          "Straw",
+          "Sticks",
+          "Bricks",
+          "Mud"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which princess had extremely long hair and lived trapped in a tower?",
+        "opts": [
+          "Cinderella",
+          "Rapunzel",
+          "Ariel",
+          "Belle"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What type of house did the Big Bad Wolf blow down first in the Three Little Pigs?",
+        "opts": [
+          "Straw house",
+          "Stick house",
+          "Brick house",
+          "Stone house"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Who is the master detective created by Sir Arthur Conan Doyle?",
+        "opts": [
+          "Sherlock Holmes",
+          "Hercule Poirot",
+          "Miss Marple",
+          "Inspector Jacques Clouseau"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Who wrote 'Charlie and the Chocolate Factory'?",
+        "opts": [
+          "Roald Dahl",
+          "C.S. Lewis",
+          "J.R.R. Tolkien",
+          "E.B. White"
+        ],
+        "correct": 0
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "title": "Classics & Bestsellers",
+    "category": "Literature",
+    "difficulty": "Medium",
+    "icon": "📖",
+    "iconBg": "#ede9fc",
+    "questions": [
+      {
+        "q": "Who wrote the Pulitzer Prize-winning novel 'To Kill a Mockingbird'?",
+        "opts": [
+          "Harper Lee",
+          "Truman Capote",
+          "John Steinbeck",
+          "F. Scott Fitzgerald"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Who wrote the fantasy novel 'The Hobbit'?",
+        "opts": [
+          "C.S. Lewis",
+          "J.R.R. Tolkien",
+          "George R.R. Martin",
+          "J.K. Rowling"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the title of the famous dystopian novel about Big Brother by George Orwell?",
+        "opts": [
+          "Brave New World",
+          "Fahrenheit 451",
+          "1984",
+          "Animal Farm"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who wrote the classic romance novel 'Pride and Prejudice'?",
+        "opts": [
+          "Charlotte Brontë",
+          "Emily Brontë",
+          "Jane Austen",
+          "Mary Shelley"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who wrote the American classic 'The Great Gatsby'?",
+        "opts": [
+          "Ernest Hemingway",
+          "F. Scott Fitzgerald",
+          "John Steinbeck",
+          "William Faulkner"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who wrote the epic ancient Greek poem 'The Odyssey'?",
+        "opts": [
+          "Homer",
+          "Virgil",
+          "Socrates",
+          "Plato"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "What is the name of the obsessive captain in Herman Melville's 'Moby-Dick'?",
+        "opts": [
+          "Captain Ahab",
+          "Captain Nemo",
+          "Captain Hook",
+          "Captain Jack Sparrow"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Who wrote the gothic romance novel 'Jane Eyre'?",
+        "opts": [
+          "Jane Austen",
+          "Charlotte Brontë",
+          "Emily Brontë",
+          "Anne Brontë"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who is the main teenage protagonist of J.D. Salinger's 'The Catcher in the Rye'?",
+        "opts": [
+          "Holden Caulfield",
+          "Jay Gatsby",
+          "Tom Sawyer",
+          "Atticus Finch"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Who wrote the epic fantasy trilogy 'The Lord of the Rings'?",
+        "opts": [
+          "J.R.R. Tolkien",
+          "George R.R. Martin",
+          "C.S. Lewis",
+          "Terry Pratchett"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "What is the central theme of Ray Bradbury's 'Fahrenheit 451'?",
+        "opts": [
+          "Government wiretapping",
+          "Book burning & censorship",
+          "Alien invasion",
+          "Time travel"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who wrote the science fiction classic 'Frankenstein'?",
+        "opts": [
+          "Mary Shelley",
+          "Bram Stoker",
+          "Edgar Allan Poe",
+          "H.G. Wells"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which American author wrote the novella 'The Old Man and the Sea'?",
+        "opts": [
+          "Mark Twain",
+          "F. Scott Fitzgerald",
+          "Ernest Hemingway",
+          "John Steinbeck"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who wrote the famous Russian historical novel 'War and Peace'?",
+        "opts": [
+          "Fyodor Dostoevsky",
+          "Leo Tolstoy",
+          "Anton Chekhov",
+          "Alexander Pushkin"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the name of the wise wizard in 'The Lord of the Rings'?",
+        "opts": [
+          "Dumbledore",
+          "Merlin",
+          "Gandalf",
+          "Saruman"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who wrote the semi-autobiographical novel 'Little Women'?",
+        "opts": [
+          "Jane Austen",
+          "Louisa May Alcott",
+          "Charlotte Brontë",
+          "Harriet Beecher Stowe"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who wrote the pirate adventure novel 'Treasure Island'?",
+        "opts": [
+          "Robert Louis Stevenson",
+          "J.M. Barrie",
+          "Daniel Defoe",
+          "Herman Melville"
+        ],
+        "correct": 0
+      }
+    ]
+  },
+  {
+    "id": 15,
+    "title": "Literary Movements & Poetry",
+    "category": "Literature",
+    "difficulty": "Hard",
+    "icon": "✍️",
+    "iconBg": "#ede9fc",
+    "questions": [
+      {
+        "q": "Who wrote the famous English epic poem 'Paradise Lost'?",
+        "opts": [
+          "William Shakespeare",
+          "John Milton",
+          "William Wordsworth",
+          "Lord Byron"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who wrote the highly complex modernist novel 'Ulysses'?",
+        "opts": [
+          "Virginia Woolf",
+          "James Joyce",
+          "T.S. Eliot",
+          "F. Scott Fitzgerald"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who wrote the Russian psychological novel 'Crime and Punishment'?",
+        "opts": [
+          "Leo Tolstoy",
+          "Fyodor Dostoevsky",
+          "Anton Chekhov",
+          "Vladimir Nabokov"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who wrote the epic three-part poem 'The Divine Comedy'?",
+        "opts": [
+          "Virgil",
+          "Dante Alighieri",
+          "Homer",
+          "Geoffrey Chaucer"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which American gothic writer wrote the poem 'The Raven'?",
+        "opts": [
+          "Edgar Allan Poe",
+          "Nathaniel Hawthorne",
+          "H.P. Lovecraft",
+          "Herman Melville"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Who wrote the landmark magic realist novel 'One Hundred Years of Solitude'?",
+        "opts": [
+          "Jorge Luis Borges",
+          "Gabriel García Márquez",
+          "Julio Cortázar",
+          "Pablo Neruda"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who wrote the two-part tragic German play 'Faust'?",
+        "opts": [
+          "Friedrich Schiller",
+          "Johann Wolfgang von Goethe",
+          "Thomas Mann",
+          "Franz Kafka"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which Romantic poet wrote the famous lines 'I wandered lonely as a cloud'?",
+        "opts": [
+          "John Keats",
+          "Percy Bysshe Shelley",
+          "William Wordsworth",
+          "Lord Byron"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who wrote the French historical masterpiece 'Les Misérables'?",
+        "opts": [
+          "Gustave Flaubert",
+          "Alexandre Dumas",
+          "Victor Hugo",
+          "Émile Zola"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which author wrote the surreal novella 'The Metamorphosis'?",
+        "opts": [
+          "Franz Kafka",
+          "Albert Camus",
+          "Jean-Paul Sartre",
+          "James Joyce"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Who wrote the absurdist play 'Waiting for Godot'?",
+        "opts": [
+          "Albert Camus",
+          "Jean-Paul Sartre",
+          "Samuel Beckett",
+          "Harold Pinter"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who is the legendary blind poet traditionally credited with composing 'The Iliad'?",
+        "opts": [
+          "Homer",
+          "Virgil",
+          "Hesiod",
+          "Sophocles"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which English Romantic poet wrote 'Ode to a Nightingale'?",
+        "opts": [
+          "John Keats",
+          "Percy Bysshe Shelley",
+          "Lord Byron",
+          "William Blake"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Who wrote the French realist novel 'Madame Bovary'?",
+        "opts": [
+          "Victor Hugo",
+          "Honoré de Balzac",
+          "Gustave Flaubert",
+          "Guy de Maupassant"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who wrote the American play 'Death of a Salesman'?",
+        "opts": [
+          "Tennessee Williams",
+          "Eugene O'Neill",
+          "Arthur Miller",
+          "Edward Albee"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who wrote the modernist landmark poem 'The Waste Land'?",
+        "opts": [
+          "W.B. Yeats",
+          "T.S. Eliot",
+          "Ezra Pound",
+          "Robert Frost"
+        ],
+        "correct": 1
+      }
+    ]
+  },
+  {
+    "id": 16,
+    "title": "Blockbusters & Cartoons",
+    "category": "Pop Culture",
+    "difficulty": "Easy",
+    "icon": "🎬",
+    "iconBg": "#edfdf5",
+    "questions": [
+      {
+        "q": "Who is the mouse mascot of the Walt Disney Company?",
+        "opts": [
+          "Donald Duck",
+          "Bugs Bunny",
+          "Mickey Mouse",
+          "Daffy Duck"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which Marvel superhero wields a round shield with a star?",
+        "opts": [
+          "Iron Man",
+          "Captain America",
+          "Thor",
+          "Spider-Man"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the name of the yellow sponge who lives in a pineapple under the sea?",
+        "opts": [
+          "Patrick Star",
+          "SpongeBob SquarePants",
+          "Squidward Tentacles",
+          "Sandy Cheeks"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which 1993 film is about cloned dinosaurs escaping from a tropical theme park?",
+        "opts": [
+          "Jaws",
+          "Jurassic Park",
+          "King Kong",
+          "Avatar"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who is the green ogre who loves a princess named Fiona?",
+        "opts": [
+          "Shrek",
+          "Donkey",
+          "Lord Farquaad",
+          "Puss in Boots"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which superhero wears a red and blue suit and shoots webs from his wrists?",
+        "opts": [
+          "Batman",
+          "Superman",
+          "Spider-Man",
+          "The Flash"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the name of the lion cub who becomes king in Disney's classic animated film?",
+        "opts": [
+          "Mufasa",
+          "Simba",
+          "Scar",
+          "Kovu"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who is the boy who owns the toys Woody and Buzz in 'Toy Story'?",
+        "opts": [
+          "Sid",
+          "Andy",
+          "Danny",
+          "Billy"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the name of the wizarding school Harry Potter attends?",
+        "opts": [
+          "Hogwarts",
+          "Beauxbatons",
+          "Durmstrang",
+          "Ilvermorny"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "What is the name of the red race car who is the main character in 'Cars'?",
+        "opts": [
+          "Mater",
+          "Doc Hudson",
+          "Lightning McQueen",
+          "Sally"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which pop singer is internationally known as the 'King of Pop'?",
+        "opts": [
+          "Elvis Presley",
+          "Michael Jackson",
+          "Prince",
+          "Madonna"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who is the pink circular arcade game character who eats pac-dots and avoids ghosts?",
+        "opts": [
+          "Mario",
+          "Donkey Kong",
+          "Pac-Man",
+          "Sonic"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the name of the dark city that Batman protects?",
+        "opts": [
+          "Metropolis",
+          "Gotham City",
+          "Central City",
+          "Star City"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the name of the friendly, talking snowman in Disney's 'Frozen'?",
+        "opts": [
+          "Kristoff",
+          "Sven",
+          "Olaf",
+          "Hans"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Who is the villain who snaps his fingers to wipe out half of all life in Avengers: Infinity War?",
+        "opts": [
+          "Loki",
+          "Ultron",
+          "Thanos",
+          "Red Skull"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "What is the name of the red furry monster from Sesame Street who speaks in the third person?",
+        "opts": [
+          "Elmo",
+          "Cookie Monster",
+          "Big Bird",
+          "Grover"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "What color is the Pokémon Pikachu?",
+        "opts": [
+          "Blue",
+          "Red",
+          "Yellow",
+          "Green"
+        ],
+        "correct": 2
+      }
+    ]
+  },
+  {
+    "id": 17,
+    "title": "Music Charts & TV Hits",
+    "category": "Pop Culture",
+    "difficulty": "Medium",
+    "icon": "🎸",
+    "iconBg": "#edfdf5",
+    "questions": [
+      {
+        "q": "Which HBO TV show features the noble families Starks, Lannisters, and Targaryens?",
+        "opts": [
+          "Westworld",
+          "Game of Thrones",
+          "Succession",
+          "The Sopranos"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who is the pop artist behind the smash hit albums '1989', 'Lover', and 'Midnights'?",
+        "opts": [
+          "Katy Perry",
+          "Taylor Swift",
+          "Ariana Grande",
+          "Lady Gaga"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which South Korean film won the Oscar for Best Picture in 2020, making history?",
+        "opts": [
+          "Oldboy",
+          "Parasite",
+          "The Handmaiden",
+          "Burning"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the name of the fictional Indiana town where Netflix's 'Stranger Things' is set?",
+        "opts": [
+          "Hawkins",
+          "Riverdale",
+          "Sunnydale",
+          "Twin Peaks"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Who was the legendary lead singer of the British rock band Queen?",
+        "opts": [
+          "Freddie Mercury",
+          "Brian May",
+          "Mick Jagger",
+          "David Bowie"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which hit NBC sitcom features a group of friends hanging out at the 'Central Perk' coffee shop?",
+        "opts": [
+          "Seinfeld",
+          "Friends",
+          "How I Met Your Mother",
+          "The Office"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which sci-fi action film series stars Keanu Reeves as the hacker Neo choosing the red pill?",
+        "opts": [
+          "Terminator",
+          "The Matrix",
+          "Blade Runner",
+          "Star Wars"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who directed the mind-bending sci-fi films 'Inception', 'Interstellar', and 'Oppenheimer'?",
+        "opts": [
+          "Steven Spielberg",
+          "Quentin Tarantino",
+          "Christopher Nolan",
+          "Martin Scorsese"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which American pop princess sang the hit songs '...Baby One More Time' and 'Toxic'?",
+        "opts": [
+          "Christina Aguilera",
+          "Britney Spears",
+          "Madonna",
+          "Janet Jackson"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the name of the fictional, technologically advanced African nation in Marvel's 'Black Panther'?",
+        "opts": [
+          "Wakanda",
+          "Zamunda",
+          "El Dorado",
+          "Atlantis"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which actor starred as the character Jack Dawson in the 1997 blockbuster movie 'Titanic'?",
+        "opts": [
+          "Brad Pitt",
+          "Johnny Depp",
+          "Leonardo DiCaprio",
+          "Matt Damon"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "Which legendary English rock band released the famous 1969 studio album 'Abbey Road'?",
+        "opts": [
+          "The Rolling Stones",
+          "The Who",
+          "Led Zeppelin",
+          "The Beatles"
+        ],
+        "correct": 3
+      },
+      {
+        "q": "What is the name of the outcast school Wednesday Addams attends in the Netflix series 'Wednesday'?",
+        "opts": [
+          "Hogwarts",
+          "Nevermore Academy",
+          "Riverdale High",
+          "Brakebills"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Which British powerhouse singer released the record-breaking hit single 'Rolling in the Deep'?",
+        "opts": [
+          "Adele",
+          "Amy Winehouse",
+          "Dua Lipa",
+          "Ellie Goulding"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which movie stars Keanu Reeves as a retired assassin seeking vengeance for his puppy?",
+        "opts": [
+          "John Wick",
+          "Taken",
+          "The Equalizer",
+          "Bourne Identity"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "What is the name of Han Solo's iconic spaceship in the 'Star Wars' saga?",
+        "opts": [
+          "Enterprise",
+          "Millennium Falcon",
+          "Discovery",
+          "Serenity"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who is the legendary creator of the original 'Star Trek' science fiction series?",
+        "opts": [
+          "George Lucas",
+          "Gene Roddenberry",
+          "Stanley Kubrick",
+          "Ridley Scott"
+        ],
+        "correct": 1
+      }
+    ]
+  },
+  {
+    "id": 18,
+    "title": "Niche Fandoms & Retro Gaming",
+    "category": "Pop Culture",
+    "difficulty": "Hard",
+    "icon": "🎮",
+    "iconBg": "#edfdf5",
+    "questions": [
+      {
+        "q": "What year was the original Nintendo Entertainment System (NES) released in North America?",
+        "opts": [
+          "1983",
+          "1985",
+          "1987",
+          "1989"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What was the first feature-length cel-animated movie ever released in cinema history (1937)?",
+        "opts": [
+          "Fantasia",
+          "Pinocchio",
+          "Snow White and the Seven Dwarfs",
+          "Dumbo"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "In the sandbox game 'Minecraft', what is the name of the final dragon boss in the End dimension?",
+        "opts": [
+          "Nether Dragon",
+          "Ender Dragon",
+          "Void Dragon",
+          "Obsidian Dragon"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "Who wrote and directed the original 1977 space epic 'Star Wars: A New Hope'?",
+        "opts": [
+          "Steven Spielberg",
+          "Francis Ford Coppola",
+          "George Lucas",
+          "Ridley Scott"
+        ],
+        "correct": 2
+      },
+      {
+        "q": "In the long-running BBC sci-fi show 'Doctor Who', what does the acronym TARDIS stand for?",
+        "opts": [
+          "Time And Space Displacement In Ship",
+          "Time And Relative Dimension In Space",
+          "Travel And Relative Distance In Space",
+          "Temporal And Relativistic Distortion In System"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What was the name of the original 1981 arcade game in which Mario first appeared under the name 'Jumpman'?",
+        "opts": [
+          "Donkey Kong",
+          "Pac-Man",
+          "Space Invaders",
+          "Galaga"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which legendary actress holds the record for the most Oscar nominations for acting (21)?",
+        "opts": [
+          "Katharine Hepburn",
+          "Meryl Streep",
+          "Bette Davis",
+          "Judi Dench"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What was the name of the high school that Buffy Summers attended in the TV series 'Buffy the Vampire Slayer'?",
+        "opts": [
+          "Sunnydale High",
+          "Riverdale High",
+          "West Beverly High",
+          "Shermer High"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "In Quentin Tarantino's 1994 film 'Pulp Fiction', what is the name of the character played by John Travolta?",
+        "opts": [
+          "Vincent Vega",
+          "Jules Winnfield",
+          "Butch Coolidge",
+          "Marsellus Wallace"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "What 1972 Atari game is widely credited as the first commercially successful video game?",
+        "opts": [
+          "Pong",
+          "Asteroids",
+          "Space Invaders",
+          "Computer Space"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Who composed the iconic musical scores for the Star Wars, Indiana Jones, and Harry Potter films?",
+        "opts": [
+          "Hans Zimmer",
+          "John Williams",
+          "Danny Elfman",
+          "Howard Shore"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "In the landmark anime series 'Neon Genesis Evangelion', who is the pilot of Eva Unit-01?",
+        "opts": [
+          "Shinji Ikari",
+          "Rei Ayanami",
+          "Asuka Langley",
+          "Kaworu Nagisa"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "What was the name of the original drummer for The Beatles before he was replaced by Ringo Starr?",
+        "opts": [
+          "Pete Best",
+          "Stuart Sutcliffe",
+          "George Martin",
+          "Brian Epstein"
+        ],
+        "correct": 0
+      },
+      {
+        "q": "Which classic 1942 Hollywood movie features the famous romantic line, 'Here's looking at you, kid'?",
+        "opts": [
+          "Citizen Kane",
+          "Casablanca",
+          "Gone with the Wind",
+          "Sunset Boulevard"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "What is the name of the primary, silver-haired antagonist in the 1997 RPG 'Final Fantasy VII'?",
+        "opts": [
+          "Kefka",
+          "Sephiroth",
+          "Genesis",
+          "Seymour"
+        ],
+        "correct": 1
+      },
+      {
+        "q": "In the TV drama 'Breaking Bad', what is the name of Gus Fring's fast-food chicken chain?",
+        "opts": [
+          "Los Pollos Hermanos",
+          "El Pollo Loco",
+          "Chicken Fiesta",
+          "Pollo Hermanos"
+        ],
+        "correct": 0
+      }
+    ]
+  }
+];
+
+const BUILTIN_QUIZ_COUNT = quizDB.length;
+let nextQuizId = BUILTIN_QUIZ_COUNT + 1;
+let selectedQuiz = quizDB[0];
+let currentQ = 0, userScore = 0, answered = false;
+let timerInterval = null, timeLeft = 20, timings = [];
+const TIMER_MAX = 20;
+
+const $ = id => document.getElementById(id);
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) return resolve();
+    const s = document.createElement('script');
+    s.src = src; s.async = true;
+    s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function hideLoading() { $('screen-loading').style.display = 'none'; }
+
+function userKey() { return currentUser?.email || currentUser?.name || 'guest'; }
+
+function loadCustomQuizzes() {
+  try {
+    const custom = JSON.parse(localStorage.getItem(STORAGE.quizzes) || '[]');
+    if (Array.isArray(custom)) custom.forEach(q => quizDB.push(q));
+    nextQuizId = quizDB.reduce((max, q) => Math.max(max, q.id), 0) + 1;
+  } catch (_) { /* ignore corrupt data */ }
+}
+
+function saveCustomQuizzes() {
+  const custom = quizDB.filter(q => q.id > BUILTIN_QUIZ_COUNT);
+  localStorage.setItem(STORAGE.quizzes, JSON.stringify(custom));
+}
+
+function loadStatsLocally() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE.stats) || '{}');
+    stats = saved[userKey()] || { played: 0, correct: 0, bestScore: 0 };
+  } catch (_) {
+    stats = { played: 0, correct: 0, bestScore: 0 };
+  }
+}
+
+function saveStatsLocally() {
+  if (!currentUser) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE.stats) || '{}');
+    saved[userKey()] = stats;
+    localStorage.setItem(STORAGE.stats, JSON.stringify(saved));
+  } catch (err) { console.warn('Failed to save stats:', err); }
+}
+
+function saveStats() {
+  if (isDemoMode) saveStatsLocally();
+  else saveStatsToFirestore();
+}
+
+function enterApp(user) {
+  currentUser = user;
+  if (isDemoMode) localStorage.setItem(STORAGE.user, JSON.stringify(user));
+  if (isDemoMode) loadStatsLocally();
+  setUserUI();
+  renderLibrary();
+  showScreen('screen-dashboard');
+}
+
+// ── Auth helpers ──
+function showAuthMsg(id, msg, type) {
+  const el = $(id);
+  el.textContent = msg;
+  el.className = 'auth-msg ' + type;
+}
+function clearAuthMsgs() {
+  document.querySelectorAll('.auth-msg').forEach(el => { el.className = 'auth-msg'; el.textContent = ''; });
+}
+function friendlyAuthError(code) {
+  const map = {
+    'auth/email-already-in-use': 'This email is already registered. Try signing in instead.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/weak-password': 'Password must be at least 6 characters.',
+    'auth/user-not-found': 'No account found with this email.',
+    'auth/wrong-password': 'Incorrect password. Please try again.',
+    'auth/invalid-credential': 'Incorrect email or password. Please try again.',
+    'auth/too-many-requests': 'Too many attempts. Please try again later.',
+    'auth/network-request-failed': 'Network error. Check your internet connection.',
+  };
+  return map[code] || 'Something went wrong. Please try again.';
+}
+
+async function doLogin() {
+  clearAuthMsgs();
+  const email = $('login-email').value.trim();
+  const pwd = $('login-pwd').value;
+  if (!email) return showAuthMsg('login-msg', 'Please enter your email.', 'error');
+
+  if (isDemoMode) {
+    if (!pwd) return showAuthMsg('login-msg', 'Please enter a password.', 'error');
+    const name = email.split('@')[0];
+    enterApp({ name: name.charAt(0).toUpperCase() + name.slice(1), email });
+    return;
+  }
+
+  if (!pwd) return showAuthMsg('login-msg', 'Please enter your password.', 'error');
+  const btn = $('login-btn');
+  btn.classList.add('loading'); btn.textContent = 'Signing in…';
+  try {
+    await auth.signInWithEmailAndPassword(email, pwd);
+  } catch (err) {
+    showAuthMsg('login-msg', friendlyAuthError(err.code), 'error');
+  } finally {
+    btn.classList.remove('loading'); btn.textContent = 'Sign in';
+  }
+}
+
+async function doRegister() {
+  clearAuthMsgs();
+  const first = $('reg-first').value.trim();
+  const last = $('reg-last').value.trim();
+  const email = $('reg-email').value.trim();
+  const pwd = $('reg-pwd').value;
+  if (!first) return showAuthMsg('register-msg', 'Please enter your first name.', 'error');
+  if (!email) return showAuthMsg('register-msg', 'Please enter your email.', 'error');
+  if (!pwd || pwd.length < 6) return showAuthMsg('register-msg', 'Password must be at least 6 characters.', 'error');
+
+  if (isDemoMode) {
+    const displayName = last ? first + ' ' + last : first;
+    enterApp({ name: displayName, email });
+    return;
+  }
+
+  const btn = $('register-btn');
+  btn.classList.add('loading'); btn.textContent = 'Creating account…';
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(email, pwd);
+    const displayName = last ? first + ' ' + last : first;
+    await cred.user.updateProfile({ displayName });
+    await db.collection('users').doc(cred.user.uid).set({ played: 0, correct: 0, bestScore: 0 });
+  } catch (err) {
+    showAuthMsg('register-msg', friendlyAuthError(err.code), 'error');
+  } finally {
+    btn.classList.remove('loading'); btn.textContent = 'Create account';
+  }
+}
+
+async function doLogout() {
+  if (isDemoMode) {
+    localStorage.removeItem(STORAGE.user);
+    currentUser = null;
+    stats = { played: 0, correct: 0, bestScore: 0 };
+    showScreen('screen-auth');
+    return;
+  }
+  await auth.signOut();
+  currentUser = null;
+  stats = { played: 0, correct: 0, bestScore: 0 };
+  showScreen('screen-auth');
+}
+
+function setUserUI() {
+  $('user-name').textContent = currentUser.name;
+  $('user-avatar').textContent = currentUser.name.slice(0, 2).toUpperCase();
+  updateStats();
+}
+
+function switchTab(tab) {
+  $('tab-login').style.display = tab === 'login' ? '' : 'none';
+  $('tab-register').style.display = tab === 'register' ? '' : 'none';
+  document.querySelectorAll('.tab').forEach((t, i) =>
+    t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register')));
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+const DIFFICULTY_COLORS = { Easy: ['#bbf7d0', '#15803d'], Medium: ['#fde68a', '#b45309'], Hard: ['#fecaca', '#b91c1c'] };
+
+function renderLibrary() {
+  const lib = $('quiz-library');
+  const frag = document.createDocumentFragment();
+  quizDB.forEach(q => {
+    const [bg, fg] = DIFFICULTY_COLORS[q.difficulty] || ['#e8e8e8', '#444'];
+    const card = document.createElement('div');
+    card.className = 'quiz-card';
+    card.dataset.id = q.id;
+    card.innerHTML = `<div class="quiz-icon" style="background:${q.iconBg}">${q.icon}</div>
+      <div class="quiz-info"><div class="title">${q.title}</div><div class="meta">${q.category} · ${q.questions.length} questions</div></div>
+      <span class="quiz-badge" style="background:${bg};color:${fg}">${q.difficulty}</span>`;
+    frag.appendChild(card);
+  });
+  lib.replaceChildren(frag);
+}
+
+function selectQuiz(id) {
+  selectedQuiz = quizDB.find(q => q.id === id) || quizDB[0];
+  startQuiz();
+}
+
+function startQuiz() {
+  currentQ = 0; userScore = 0; answered = false; timings = [];
+  showScreen('screen-quiz');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  clearInterval(timerInterval);
+  answered = false;
+  const q = selectedQuiz.questions[currentQ];
+  const total = selectedQuiz.questions.length;
+  $('q-label').textContent = `Question ${currentQ + 1} of ${total}`;
+  $('score-live').textContent = `Score: ${userScore}`;
+  $('progress-fill').style.width = (currentQ / total * 100) + '%';
+  $('q-category').textContent = selectedQuiz.category;
+  $('q-text').textContent = q.q;
+  const fb = $('feedback-box');
+  fb.className = 'feedback';
+  fb.textContent = '';
+  $('next-btn').style.display = 'none';
+  const letters = ['A', 'B', 'C', 'D'];
+  const optsFrag = document.createDocumentFragment();
+  q.opts.forEach((o, i) => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.id = `opt-${i}`;
+    div.dataset.idx = i;
+    div.innerHTML = `<div class="option-letter">${letters[i]}</div><span>${o}</span>`;
+    optsFrag.appendChild(div);
+  });
+  $('options-wrap').replaceChildren(optsFrag);
+  timeLeft = TIMER_MAX;
+  updateTimerUI();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerUI();
+    if (timeLeft <= 0) { clearInterval(timerInterval); autoTimeout(); }
+  }, 1000);
+}
+
+function updateTimerUI() {
+  $('timer-val').textContent = timeLeft;
+  const fill = $('timer-fill');
+  fill.style.width = (timeLeft / TIMER_MAX * 100) + '%';
+  fill.className = 'timer-bar-fill' + (timeLeft <= 5 ? ' danger' : timeLeft <= 10 ? ' warn' : '');
+}
+
+function autoTimeout() {
+  if (answered) return;
+  answered = true;
+  const q = selectedQuiz.questions[currentQ];
+  $(`opt-${q.correct}`).classList.add('correct');
+  document.querySelectorAll('.option').forEach(o => o.classList.add('disabled'));
+  const fb = $('feedback-box');
+  fb.className = 'feedback wrong';
+  fb.textContent = "⏰ Time's up! The correct answer is highlighted above.";
+  $('next-btn').style.display = '';
+  timings.push(TIMER_MAX);
+}
+
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+  clearInterval(timerInterval);
+  timings.push(TIMER_MAX - timeLeft);
+  const q = selectedQuiz.questions[currentQ];
+  const ok = idx === q.correct;
+  document.querySelectorAll('.option').forEach(o => o.classList.add('disabled'));
+  $(`opt-${idx}`).classList.add(ok ? 'correct' : 'wrong');
+  if (!ok) $(`opt-${q.correct}`).classList.add('correct');
+  if (ok) userScore++;
+  const fb = $('feedback-box');
+  fb.className = 'feedback ' + (ok ? 'correct' : 'wrong');
+  fb.textContent = ok ? '✅ Correct! Well done.' : `❌ Not quite. Correct answer: ${q.opts[q.correct]}`;
+  $('next-btn').style.display = '';
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= selectedQuiz.questions.length) showResults();
+  else renderQuestion();
+}
+
+function showResults() {
+  clearInterval(timerInterval);
+  const total = selectedQuiz.questions.length;
+  const pct = Math.round(userScore / total * 100);
+  const avgTime = timings.length ? Math.round(timings.reduce((a, b) => a + b, 0) / timings.length) : 0;
+  stats.played++;
+  stats.correct += userScore;
+  if (pct > stats.bestScore) stats.bestScore = pct;
+  updateStats();
+  saveStats();
+  $('score-pct').textContent = pct + '%';
+  $('res-correct').textContent = userScore;
+  $('res-wrong').textContent = total - userScore;
+  $('res-time').textContent = avgTime + 's';
+  const headlines = ['Amazing work! 🎉', 'Great job! 🌟', 'Well done! 🌸', 'Keep practicing! 💪', 'Nice effort! 🌼'];
+  $('score-headline').textContent = headlines[pct >= 90 ? 0 : pct >= 70 ? 1 : pct >= 50 ? 2 : pct >= 30 ? 3 : 4];
+  $('score-msg').textContent = `You scored ${userScore} out of ${total} questions.`;
+  showScreen('screen-score');
+  const circ = $('ring-circle');
+  circ.style.transition = 'none';
+  circ.style.strokeDashoffset = '377';
+  circ.getBoundingClientRect();
+  const offset = 377 - (377 * (pct / 100));
+  setTimeout(() => { circ.style.transition = 'stroke-dashoffset 1s ease'; circ.style.strokeDashoffset = offset; }, 100);
+  if (pct >= 70) launchConfetti();
+}
+
+function restartQuiz() { startQuiz(); }
+
+function updateStats() {
+  $('stat-played').textContent = stats.played;
+  $('stat-correct').textContent = stats.correct;
+  $('stat-score').textContent = stats.bestScore + '%';
+}
+
+// Quiz creator
+let questionCount = 0;
+function addQuestion() {
+  questionCount++;
+  const wrap = $('questions-wrap');
+  const div = document.createElement('div');
+  div.className = 'q-builder';
+  div.innerHTML = `<div class="field"><label>Question ${questionCount}</label><textarea placeholder="Type your question here…"></textarea></div>
+    <div style="font-size:13px;font-weight:500;color:var(--ink-mid);margin-bottom:6px;">Options <span style="color:var(--ink-muted);font-weight:400;">(click ✓ to mark correct)</span></div>
+    ${['A', 'B', 'C', 'D'].map((l, i) => `<div class="opt-row"><input type="text" placeholder="Option ${l}" /><button type="button" class="correct-toggle${i === 0 ? ' marked' : ''}" onclick="markCorrect(this)">${i === 0 ? '✓' : ''}</button></div>`).join('')}`;
+  wrap.appendChild(div);
+}
+function markCorrect(btn) {
+  btn.closest('.q-builder').querySelectorAll('.correct-toggle').forEach(b => { b.classList.remove('marked'); b.textContent = ''; });
+  btn.classList.add('marked');
+  btn.textContent = '✓';
+}
+function saveQuiz() {
+  const title = $('create-title').value.trim();
+  if (!title) return alert('Please enter a quiz title.');
+  const cats = { Science: '🔬', History: '🏛️', Geography: '🌍', Math: '🔢', Literature: '📚', 'Pop Culture': '🎬' };
+  const cat = $('create-cat').value;
+  const diff = $('create-diff').value;
+  const qs = [];
+  let validationError = null;
+
+  document.querySelectorAll('.q-builder').forEach((qb, qIdx) => {
+    if (validationError) return;
+    const qText = qb.querySelector('textarea').value.trim();
+    if (!qText) { validationError = `Question ${qIdx + 1} has no text.`; return; }
+
+    const rows = [...qb.querySelectorAll('.opt-row')];
+    const inputs = [];
+    let correctIdx = -1;
+    rows.forEach((row) => {
+      const val = row.querySelector('input').value.trim();
+      const isMarkedCorrect = row.querySelector('.correct-toggle').classList.contains('marked');
+      if (val) {
+        inputs.push(val);
+        if (isMarkedCorrect) correctIdx = inputs.length - 1;
+      }
+    });
+
+    if (inputs.length < 2) { validationError = `Question ${qIdx + 1} must have at least 2 non-empty options.`; return; }
+    if (correctIdx === -1) { validationError = `Please select a valid (non-empty) correct option for Question ${qIdx + 1}.`; return; }
+    qs.push({ q: qText, opts: inputs, correct: correctIdx });
+  });
+
+  if (validationError) return alert(validationError);
+  if (qs.length === 0) return alert('Please add at least one question to the quiz.');
+
+  const newQuiz = {
+    id: nextQuizId++,
+    title, category: cat, difficulty: diff,
+    icon: cats[cat] || '📝', iconBg: '#ede9fc', questions: qs
+  };
+  quizDB.push(newQuiz);
+  if (isDemoMode) saveCustomQuizzes();
+  renderLibrary();
+  alert(`"${title}" published! 🌸`);
+  $('create-title').value = '';
+  $('questions-wrap').innerHTML = '';
+  questionCount = 0;
+  addQuestion();
+  showScreen('screen-dashboard');
+}
+
+function launchConfetti() {
+  const canvas = $('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const colors = ['#c4b5f4', '#b8d9f8', '#fde68a', '#bbf7d0', '#fecaca', '#7c5cbf'];
+  const pieces = Array.from({ length: 90 }, () => ({
+    x: Math.random() * canvas.width, y: Math.random() * -canvas.height,
+    w: 6 + Math.random() * 8, h: 3 + Math.random() * 5,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    rot: Math.random() * 360, rotV: (Math.random() - .5) * 6,
+    vx: (Math.random() - .5) * 2, vy: 2 + Math.random() * 3,
+  }));
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+      p.x += p.vx; p.y += p.vy; p.rot += p.rotV;
+    });
+    frame++;
+    if (frame < 150) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  draw();
+}
+
+// ── Firebase (production mode only) ──
+async function saveStatsToFirestore() {
+  if (!auth?.currentUser) return;
+  try {
+    await db.collection('users').doc(auth.currentUser.uid).set(stats, { merge: true });
+  } catch (err) { console.warn('Failed to save stats:', err); }
+}
+
+async function loadStatsFromFirestore(uid) {
+  try {
+    const doc = await db.collection('users').doc(uid).get();
+    if (doc.exists) {
+      const data = doc.data();
+      stats = { played: data.played || 0, correct: data.correct || 0, bestScore: data.bestScore || 0 };
+    } else {
+      await db.collection('users').doc(uid).set({ played: 0, correct: 0, bestScore: 0 });
+      stats = { played: 0, correct: 0, bestScore: 0 };
+    }
+  } catch (err) {
+    console.warn('Failed to load stats:', err);
+    stats = { played: 0, correct: 0, bestScore: 0 };
+  }
+}
+
+async function initFirebase() {
+  const v = '10.12.2';
+  const base = `https://www.gstatic.com/firebasejs/${v}`;
+  await Promise.all([
+    loadScript(`${base}/firebase-app-compat.js`),
+    loadScript(`${base}/firebase-auth-compat.js`),
+    loadScript(`${base}/firebase-firestore-compat.js`),
+  ]);
+  firebase.initializeApp(firebaseConfig);
+  auth = firebase.auth();
+  db = firebase.firestore();
+  auth.onAuthStateChanged(async (user) => {
+    hideLoading();
+    if (user) {
+      const name = user.displayName || user.email.split('@')[0];
+      currentUser = { name: name.charAt(0).toUpperCase() + name.slice(1), email: user.email };
+      await loadStatsFromFirestore(user.uid);
+      setUserUI();
+      renderLibrary();
+      showScreen('screen-dashboard');
+    } else {
+      currentUser = null;
+      showScreen('screen-auth');
+    }
+  });
+}
+
+function initDemo() {
+  $('demo-hint').style.display = '';
+  hideLoading();
+  try {
+    const saved = localStorage.getItem(STORAGE.user);
+    if (saved) {
+      currentUser = JSON.parse(saved);
+      loadStatsLocally();
+      setUserUI();
+      renderLibrary();
+      showScreen('screen-dashboard');
+      return;
+    }
+  } catch (_) { localStorage.removeItem(STORAGE.user); }
+  showScreen('screen-auth');
+}
+
+// ── Init ──
+$('quiz-library').addEventListener('click', e => {
+  const card = e.target.closest('.quiz-card');
+  if (card) selectQuiz(Number(card.dataset.id));
+});
+$('options-wrap').addEventListener('click', e => {
+  const opt = e.target.closest('.option');
+  if (opt && !opt.classList.contains('disabled')) selectAnswer(Number(opt.dataset.idx));
+});
+
+loadCustomQuizzes();
+addQuestion();
+if (isDemoMode) initDemo();
+else initFirebase();
+</script>
+</body>
+</html>
